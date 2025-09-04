@@ -1,24 +1,31 @@
 "use client";
 
-import { type ReactNode } from "react";
-import { base } from "wagmi/chains";
-import { MiniKitProvider } from "@coinbase/onchainkit/minikit";
+import { ReactNode } from "react";
+import { WagmiProvider, createConfig, http } from "wagmi";
+import { baseSepolia } from "wagmi/chains";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { injected } from "@wagmi/connectors";
 
-export function Providers(props: { children: ReactNode }) {
+// 1. Configure wagmi (v2 style)
+const config = createConfig({
+  chains: [baseSepolia],
+  transports: {
+    [baseSepolia.id]: http("https://sepolia.base.org"), // Base Sepolia RPC
+  },
+  connectors: [
+    injected({ target: "metaMask" }), // MetaMask or injected wallet
+  ],
+});
+
+// 2. Setup QueryClient (wagmi v2 requires react-query)
+const queryClient = new QueryClient();
+
+export function Providers({ children }: { children: ReactNode }) {
   return (
-    <MiniKitProvider
-      apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
-      chain={base}
-      config={{
-        appearance: {
-          mode: "auto",
-          theme: "mini-app-theme",
-          name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME,
-          logo: process.env.NEXT_PUBLIC_ICON_URL,
-        },
-      }}
-    >
-      {props.children}
-    </MiniKitProvider>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }

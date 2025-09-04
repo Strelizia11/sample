@@ -1,62 +1,71 @@
 "use client";
 
+import { useAccount, useConnect, useDisconnect, useSendTransaction } from "wagmi";
+import { parseEther } from "viem";
 
-// Simple EIP-1193 payment on Base Sepolia (84532). For demo purposes only.
-async function sendEth({ to, amountEth }:{ to: string; amountEth: string }) {
-if (typeof window === "undefined" || !(window as any).ethereum) throw new Error("No wallet");
-const ethereum = (window as any).ethereum;
-await ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x14a74" }] }).catch(async (e: any) => {
-// If chain not added, try to add Base Sepolia
-if (e?.code === 4902) {
-await ethereum.request({
-method: "wallet_addEthereumChain",
-params: [{
-chainId: "0x14a74",
-chainName: "Base Sepolia",
-nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
-rpcUrls: ["https://sepolia.base.org"],
-blockExplorerUrls: ["https://sepolia.basescan.org"],
-}],
-});
-} else throw e;
-});
+export function PlayButton() {
+  const { address, isConnected } = useAccount();
 
+  // Connection hook
+  const {
+    connect,
+    connectors,
+    error: connectError,
+    isPending: isConnectPending,
+  } = useConnect();
 
-const accounts = await ethereum.request({ method: "eth_requestAccounts" });
-if (!accounts?.length) throw new Error("No account");
-const from = accounts[0];
-const valueHex = `0x${BigInt(Math.floor(parseFloat(amountEth) * 1e18)).toString(16)}`;
-const txHash = await ethereum.request({
-method: "eth_sendTransaction",
-params: [{ from, to, value: valueHex }],
-});
-return txHash as string;
-}
+  const { disconnect } = useDisconnect();
 
+  // Transaction hook
+  const {
+    sendTransactionAsync,
+    error: txError,
+    isPending: isTxPending,
+  } = useSendTransaction();
 
-export default function PayButton({ to, amountEth, onPaid }:{ to: string; amountEth: string; onPaid: (hash?: string) => void }) {
-const [busy, setBusy] = useState(false);
-const [error, setError] = useState<string | null>(null);
+  async function handleSend() {
+    try {
+      await sendTransactionAsync({
+        to: "0x000000000000000000000000000000000000dead", // replace with real address
+        value: parseEther("0.001"),
+      });
+      alert("Transaction sent!");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to send transaction");
+    }
+  }
 
+  if (!isConnected) {
+    return (
+      <button
+        onClick={() => connect({ connector: connectors[0] })} // pick first connector (injected/metamask)
+        disabled={isConnectPending}
+        className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400"
+      >
+        {isConnectPending ? "Connecting..." : "Connect Wallet"}
+      </button>
+    );
+  }
 
-const handlePay = async () => {
-setBusy(true); setError(null);
-try {
-const hash = await sendEth({ to, amountEth });
-onPaid(hash);
-} catch (e: any) {
-// Fallback mock payment for demo
-console.warn("Payment failed, mocking success:", e?.message);
-onPaid(undefined);
-} finally {
-setBusy(false);
-}
-};
-
-
-return (
-<button onClick={handlePay} disabled={busy} className="px-3 py-2 rounded-xl bg-purple-600 text-white disabled:opacity-50">
-{busy ? "Processing…" : `Pay ${amountEth} ETH`}
-</button>
-);
+  return (
+    <div className="flex flex-col gap-2">
+      <button
+        onClick={handleSend}
+        disabled={isTxPending}
+        className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-400"
+      >
+        {isTxPending ? "Sending..." : "Play (Send 0.001 ETH)"}
+      </button>
+      <button
+        onClick={() => disconnect()}
+        className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+      >
+        Disconnect
+      </button>
+      <p className="text-sm text-gray-500">Connected as {address}</p>
+      {connectError && <p className="text-sm text-red-500">{connectError.message}</p>}
+      {txError && <p className="text-sm text-red-500">{txError.message}</p>}
+    </div>
+  );
 }
