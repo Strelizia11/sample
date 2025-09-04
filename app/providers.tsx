@@ -20,6 +20,7 @@ const config = createConfig({
 // 2. Setup QueryClient (wagmi v2 requires react-query)
 const queryClient = new QueryClient();
 
+// 3. Providers wrapper
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={config}>

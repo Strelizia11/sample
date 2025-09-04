@@ -25,7 +25,6 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
       <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-md">
-        {/* Role Tabs */}
         <div className="flex mb-4">
           <button
             onClick={() => setRole("customer")}
@@ -41,7 +40,6 @@ export default function AuthPage() {
           </button>
         </div>
 
-        {/* Form */}
         <h2 className="text-2xl font-bold mb-4">{isRegister ? "Register" : "Login"} as {role}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           {isRegister && (
@@ -82,7 +80,6 @@ export default function AuthPage() {
           </button>
         </form>
 
-        {/* Toggle Login/Register */}
         <p className="mt-4 text-center text-sm">
           {isRegister ? "Already have an account?" : "Don't have an account?"}{" "}
           <button className="text-blue-500 underline" onClick={() => setIsRegister(!isRegister)}>
